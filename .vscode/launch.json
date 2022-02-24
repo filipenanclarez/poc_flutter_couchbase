@@ -1,0 +1,25 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "poc_flutter_couchbase",
+            "request": "launch",
+            "type": "dart",
+            // Variaveis que serão passadas em tempo de compilação
+            "toolArgs": [
+                "--dart-define",
+                "couchGwUser=c3luY19jbGllbnQ=",
+                "--dart-define",
+                "couchGwPwd=Q0hAVjNTM0tSM1RA",
+                "--dart-define",
+                "endPointUrl=d3NzOi8vbWVtb3RhaS5jb206NDk4NC9teS1kYXRhYmFzZQ==",
+            ]
+        },
+        {
+            "name": "poc_flutter_couchbase (profile mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        }
+    ]
+}

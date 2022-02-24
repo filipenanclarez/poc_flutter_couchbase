@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cbl/cbl.dart';
 import 'package:flutter/material.dart';
 
@@ -40,11 +42,24 @@ class _MyHomePageState extends State<MyHomePage> {
   Database? database;
   var replicator;
 
+  // Aqui recebemos as variáveis que virão do ambiente via dart-define
+  static const String constCouchGwUser = String.fromEnvironment('couchGwUser');
+  static const String constCouchGwPwd = String.fromEnvironment('couchGwPwd');
+  static const String constEndPointUrl = String.fromEnvironment('endPointUrl');
+
+  // Aqui decodificamos de base64 para o valor original
+  String couchGwUser = Utf8Codec().decode(base64Decode(constCouchGwUser));
+  String couchGwPwd = Utf8Codec().decode(base64Decode(constCouchGwPwd));
+  String endPointUrl = Utf8Codec().decode(base64Decode(constEndPointUrl));
+
   Future<void> _incrementCounter() async {
+    await replicator.start();
+
     final doc = MutableDocument({
       'type': 'logMessage',
       'createdAt': DateTime.now(),
       'message': 'teste',
+      'channels': ['userA'] // canal que esse documento será atribuido
     });
 
     await database?.saveDocument(doc);
@@ -55,11 +70,12 @@ class _MyHomePageState extends State<MyHomePage> {
           SelectResult.expression(Meta.id),
           SelectResult.property('createdAt'),
           SelectResult.property('message'),
+          SelectResult.property('type'),
         )
         .from(DataSource.database(database!))
-        .where(
-          Expression.property('type').equalTo(Expression.value('logMessage')),
-        )
+        // .where(
+        //   Expression.property('type').equalTo(Expression.value('logMessage')),
+        // )
         .orderBy(Ordering.property('createdAt'));
 
     // ResultSet resultSet = await query.execute();
@@ -72,11 +88,14 @@ class _MyHomePageState extends State<MyHomePage> {
     ResultSet resultSet = await query.execute();
     var results = await resultSet.asStream().map((result) => result.toPlainMap()).toList();
 
-    print(results[0]['id']);
-    print(results[0]['createdAt']);
-    print(results[0]['message']);
+    for (var result in results) {
+      print(result);
+    }
 
-    await replicator.start();
+    // print(results[0]['id']);
+    // print(results[0]['type']);
+    // print(results[0]['createdAt']);
+    // print(results[0]['message']);
 
     setState(() {
       _counter++;
@@ -89,13 +108,17 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
     WidgetsBinding.instance?.addPostFrameCallback((timeStamp) async {
       await CouchbaseLiteFlutter.init();
-      database = await Database.openAsync('example.couchbase');
+
+      database = await Database.openAsync('example-database6');
 
       // replicador
       replicator = await Replicator.create(
         ReplicatorConfiguration(
           database: database!,
-          target: UrlEndpoint(Uri.parse('ws://localhost:4984/my-database')),
+          target: UrlEndpoint(Uri.parse(endPointUrl)),
+          channels: ['userA'],
+          // authenticador
+          authenticator: BasicAuthenticator(username: couchGwUser, password: couchGwPwd),
         ),
       );
 
